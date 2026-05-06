@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ophelia Hotels</title>
+
+  <!-- Google Fonts : Cormorant Garamond (titres) + DM Sans (texte) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Supabase JS SDK (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Nos fichiers CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAVBAR (affichée sur toutes les pages sauf fullscreen)
+  ═══════════════════════════════════════════════════════ -->
+  <nav id="navbar">
+    <div class="nav-brand" id="nav-logo">
+      OPHELIA <span>HOTELS</span>
+    </div>
+    <div class="nav-actions">
+      <!-- Bouton "Home" visible quand on n'est pas sur l'accueil -->
+      <button class="btn-text" id="nav-home-btn" style="display:none">Home</button>
+
+      <!-- Bouton Contact : scroll vers footer -->
+      <button class="btn-text" id="nav-contact-btn">Contact</button>
+
+      <!-- Bouton "My Stay" visible si séjour actif -->
+      <button class="btn-my-stay" id="nav-mystay-btn" style="display:none">My Stay</button>
+
+      <!-- Utilisateur connecté : menu déroulant -->
+      <div class="user-menu" id="user-menu" style="display:none">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="dropdown" id="user-dropdown">
+          <div class="dropdown-name" id="dropdown-name">User</div>
+          <button class="dropdown-item" id="btn-admin-panel" style="display:none">Admin Panel</button>
+          <button class="dropdown-item" id="btn-signout">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Utilisateur non connecté -->
+      <div id="auth-buttons">
+        <button class="btn-text" id="nav-signin-btn">Sign In</button>
+        <button class="btn-gold" id="nav-signup-btn">Sign Up</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       CONTENEUR PRINCIPAL — toutes les "pages" sont ici
+       Le router JS affiche/cache la bonne page
+  ═══════════════════════════════════════════════════════ -->
+  <main id="app">
+
+    <!-- ─── PAGE : ACCUEIL ─────────────────────────────── -->
+    <section id="page-home" class="page">
+      <div class="hero">
+        <div class="hero-shimmer"></div>
+        <!-- Particules dorées flottantes -->
+        <div class="hero-particles">
+          <span class="particle p1"></span>
+          <span class="particle p2"></span>
+          <span class="particle p3"></span>
+          <span class="particle p4"></span>
+          <span class="particle p5"></span>
+          <span class="particle p6"></span>
+          <span class="particle p7"></span>
+          <span class="particle p8"></span>
+          <span class="particle p9"></span>
+          <span class="particle p10"></span>
+          <span class="particle p11"></span>
+          <span class="particle p12"></span>
+        </div>
+        <div class="hero-content">
+          <h1 class="hero-title reveal" style="--d:300ms">
+            Where every detail<br>
+            becomes a <span class="hero-italic">memory.</span>
+          </h1>
+          <p class="hero-desc reveal" style="--d:600ms">
+            Three sanctuaries — the whispering Mediterranean,<br>
+            the silent forests, the eternal desert.
+          </p>
+          <div class="hero-ornament reveal" style="--d:800ms">
+            <span class="ornament-line"></span>
+            <span class="ornament-diamond"></span>
+            <span class="ornament-line"></span>
+          </div>
+          <div class="hero-scroll reveal" style="--d:1200ms">
+            <span class="scroll-text">Discover</span>
+            <span class="scroll-line"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Grille des hôtels — remplie dynamiquement par home.js -->
+      <div class="section-container">
+        <h2 class="section-title reveal" style="--d:100ms">Our <span>Hotels</span></h2>
+        <div class="hotels-grid" id="hotels-grid"></div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : DÉTAIL HÔTEL ────────────────────────── -->
+    <section id="page-hotel" class="page" style="display:none">
+      <div class="hotel-hero" id="hotel-hero-bg">
+        <div class="hotel-hero-content">
+          <button class="btn-back" id="hotel-back-btn">← Back</button>
+          <div class="hotel-rating" id="hotel-rating-badge"></div>
+          <h1 class="hotel-hero-title" id="hotel-detail-name"></h1>
+          <p class="hotel-hero-location" id="hotel-detail-location"></p>
+        </div>
+      </div>
+      <div class="section-container">
+        <p class="hotel-description" id="hotel-detail-desc"></p>
+        <h2 class="section-title">Services & <span>Rooms</span></h2>
+        <!-- Filtres de catégories -->
+        <div class="filter-tabs" id="hotel-filter-tabs"></div>
+        <!-- Grille des services — remplie dynamiquement -->
+        <div class="services-grid" id="services-grid"></div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : RÉSERVATION CHAMBRE ────────────────── -->
+    <section id="page-roombook" class="page gradient-bg" style="display:none">
+      <div class="form-container">
+        <button class="btn-back gold" id="roombook-back-btn">← Back</button>
+        <h1 class="page-title">Room <span>Booking</span></h1>
+        <!-- Résumé du service choisi -->
+        <div class="service-summary" id="roombook-summary"></div>
+
+        <!-- Sélection des dates -->
+        <div class="form-group">
+          <label class="form-label">CHECK-IN DATE</label>
+          <input type="date" id="checkin-date" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">CHECK-OUT DATE</label>
+          <input type="date" id="checkout-date" class="form-input" />
+        </div>
+
+        <!-- Nombre de personnes -->
+        <div class="counter-row">
+          <div class="counter-box">
+            <label class="form-label">ADULTS</label>
+            <div class="counter-control">
+              <button class="counter-btn" id="adults-minus">−</button>
+              <span id="adults-count">2</span>
+              <button class="counter-btn" id="adults-plus">+</button>
+            </div>
+          </div>
+          <div class="counter-box">
+            <label class="form-label">CHILDREN</label>
+            <div class="counter-control">
+              <button class="counter-btn" id="children-minus">−</button>
+              <span id="children-count">0</span>
+              <button class="counter-btn" id="children-plus">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formule -->
+        <label class="form-label">FORMULA</label>
+        <div class="chips-row" id="formula-chips"></div>
+
+        <!-- Services extras -->
+        <label class="form-label">EXTRA SERVICES</label>
+        <div class="checkbox-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="sport-check" />
+            Sport Activities (+800 DT/pers)
+          </label>
+        </div>
+        <div class="checkbox-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="spa-check" />
+            Spa &amp; Wellness (+1,200 DT/pers)
+          </label>
+        </div>
+
+        <!-- Récapitulatif du prix -->
+        <div class="price-summary" id="price-summary" style="display:none">
+          <div class="price-summary-title">PRICE SUMMARY</div>
+          <div id="price-lines"></div>
+          <div class="price-divider"></div>
+          <div class="price-total-row">
+            <span class="price-total-label">TOTAL</span>
+            <span class="price-total-value" id="price-total">0 DT</span>
+          </div>
+        </div>
+
+        <button class="btn-gold full" id="roombook-pay-btn">PROCEED TO PAYMENT</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : RÉSERVATION SERVICE ────────────────── -->
+    <section id="page-servicebook" class="page gradient-bg" style="display:none">
+      <div class="form-container">
+        <button class="btn-back gold" id="servicebook-back-btn">← Back</button>
+        <h1 class="page-title">Book <span>Service</span></h1>
+        <div class="service-summary" id="servicebook-summary"></div>
+
+        <div class="form-group">
+          <label class="form-label">BOOKING DATE</label>
+          <input type="date" id="service-booking-date" class="form-input" />
+        </div>
+
+        <div class="counter-box" style="width:100%">
+          <label class="form-label">NUMBER OF PERSONS</label>
+          <div class="counter-control">
+            <button class="counter-btn" id="service-persons-minus">−</button>
+            <span id="service-persons-count">1</span>
+            <button class="counter-btn" id="service-persons-plus">+</button>
+          </div>
+        </div>
+
+        <div class="price-summary" id="service-price-summary">
+          <div class="price-total-row">
+            <span class="price-total-label">TOTAL</span>
+            <span class="price-total-value" id="service-price-total">0 DT</span>
+          </div>
+        </div>
+
+        <button class="btn-gold full" id="servicebook-pay-btn">PROCEED TO PAYMENT</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : PAIEMENT ────────────────────────────── -->
+    <section id="page-payment" class="page gradient-bg" style="display:none">
+      <!-- Formulaire de paiement -->
+      <div class="form-container" id="payment-form-view">
+        <button class="btn-back gold" id="payment-back-btn">← Back</button>
+        <h1 class="page-title">Secure <span>Payment</span></h1>
+
+        <!-- Total à payer -->
+        <div class="total-box">
+          <span class="total-label">Total</span>
+          <span class="total-amount" id="payment-total">0 DT</span>
+        </div>
+
+        <div id="payment-error" class="error-banner" style="display:none"></div>
+
+        <div class="form-group">
+          <label class="form-label">CARDHOLDER NAME</label>
+          <input type="text" id="card-name" class="form-input" placeholder="Full name on card" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">CARD NUMBER</label>
+          <input type="text" id="card-number" class="form-input" placeholder="1234 5678 9012 3456" maxlength="19" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">EXPIRY</label>
+            <input type="text" id="card-expiry" class="form-input" placeholder="MM/YY" maxlength="5" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVV</label>
+            <input type="password" id="card-cvv" class="form-input" placeholder="123" maxlength="3" />
+          </div>
+        </div>
+
+        <button class="btn-gold full" id="pay-btn">PAY</button>
+        <p class="secure-notice">256-bit SSL encrypted · Saved to Supabase</p>
+      </div>
+
+      <!-- Confirmation de paiement -->
+      <div class="success-view" id="payment-success-view" style="display:none">
+        <div class="success-circle">✓</div>
+        <h2 class="success-title">Payment <span>Successful!</span></h2>
+        <p class="success-sub" id="payment-success-sub"></p>
+        <div id="payment-error-note" class="error-banner" style="display:none"></div>
+        <button class="btn-gold" id="payment-home-btn">BACK TO HOME</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : SIGN IN ─────────────────────────────── -->
+    <section id="page-signin" class="page gradient-bg" style="display:none">
+      <div class="auth-container">
+        <h1 class="page-title">Welcome <span>Back</span></h1>
+        <p class="auth-sub">Sign in to your account</p>
+
+        <div id="signin-error" class="error-banner" style="display:none"></div>
+
+        <div class="form-group">
+          <label class="form-label">CIN</label>
+          <input type="text" id="signin-cin" class="form-input" placeholder="CIN" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">PASSWORD</label>
+          <input type="password" id="signin-pw" class="form-input" placeholder="Enter password" />
+        </div>
+
+        <button class="btn-gold full" id="signin-btn">SIGN IN</button>
+
+        <p class="auth-link">
+          No account?
+          <span class="link" id="go-signup">Sign Up</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : SIGN UP ─────────────────────────────── -->
+    <section id="page-signup" class="page gradient-bg" style="display:none">
+      <div class="auth-container wide">
+        <h1 class="page-title">Create <span>Account</span></h1>
+        <p class="auth-sub">Join Ophelia Hotels</p>
+
+        <div id="signup-error" class="error-banner" style="display:none"></div>
+
+        <div class="form-group">
+          <label class="form-label">CIN</label>
+          <input type="text" id="signup-cin" class="form-input" placeholder="8-digit CIN" maxlength="8" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">FIRST NAME</label>
+            <input type="text" id="signup-first" class="form-input" placeholder="First name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">LAST NAME</label>
+            <input type="text" id="signup-last" class="form-input" placeholder="Last name" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ADDRESS</label>
+          <input type="text" id="signup-address" class="form-input" placeholder="Your address" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">DATE OF BIRTH</label>
+          <input type="date" id="signup-dob" class="form-input" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">PASSWORD</label>
+            <input type="password" id="signup-pw" class="form-input" placeholder="Min 6 chars" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">CONFIRM</label>
+            <input type="password" id="signup-pw2" class="form-input" placeholder="Confirm" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <button class="btn-gold" id="signup-btn">SUBMIT</button>
+          <button class="btn-gold outline" id="signup-reset-btn">RESET</button>
+        </div>
+
+        <p class="auth-link">
+          Have an account?
+          <span class="link" id="go-signin">Sign In</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : CHECK-IN ────────────────────────────── -->
+    <section id="page-checkin" class="page gradient-bg fullscreen" style="display:none">
+      <!-- Écran de scan du QR -->
+      <div class="fullscreen-center" id="checkin-scan-view">
+        <h1 class="page-title">Check-<span>In</span></h1>
+        <p class="page-sub">Scan QR Code at reception</p>
+        <div class="qr-box">
+          <!-- QR code simulé (SVG) -->
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+            <rect x="10" y="10" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="15" y="15" width="20" height="20" fill="#CDAA80"/>
+            <rect x="60" y="10" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="65" y="15" width="20" height="20" fill="#CDAA80"/>
+            <rect x="10" y="60" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="15" y="65" width="20" height="20" fill="#CDAA80"/>
+            <rect x="60" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="72" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="60" y="62" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="62" width="8" height="8" fill="#CDAA80"/>
+            <rect x="60" y="74" width="8" height="8" fill="#CDAA80"/>
+            <rect x="72" y="74" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="74" width="8" height="8" fill="#CDAA80"/>
+          </svg>
+        </div>
+        <div id="checkin-error" class="error-banner" style="display:none"></div>
+        <button class="btn-gold" id="checkin-scan-btn">SCAN QR CODE</button>
+      </div>
+
+      <!-- Écran de confirmation du check-in -->
+      <div class="success-view" id="checkin-success-view" style="display:none">
+        <div class="success-circle">✓</div>
+        <h2 class="success-title">Check-In <span>Successful!</span></h2>
+        <p class="success-sub" id="checkin-room-info"></p>
+        <p class="success-hint">Smart Room activated. Data synced to admin.</p>
+        <button class="btn-gold" id="checkin-continue-btn">ENTER SMART ROOM</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : SMART ROOM ──────────────────────────── -->
+    <section id="page-smartroom" class="page gradient-bg fullscreen" style="display:none">
+      <!-- En-tête vertical et élégant -->
+      <div class="smartroom-header">
+        <div class="smartroom-header-top">
+          <div class="smartroom-status">
+            <span class="status-dot"></span>
+            <span class="status-label">SUITE ACTIVE</span>
+          </div>
+          <button class="btn-checkout" id="smartroom-checkout-btn">Check Out</button>
+        </div>
+        <div class="smartroom-divider"></div>
+        <div class="smartroom-info">
+          <p class="smartroom-eyebrow">Welcome to your private sanctuary</p>
+          <div class="smartroom-room-name" id="smartroom-name">Room 312</div>
+          <div class="smartroom-hotel-name" id="smartroom-hotel">Ophelia Hotel</div>
+        </div>
+      </div>
+
+      <!-- Onglets du Smart Room -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="controls">Controls</button>
+        <button class="tab-btn" data-tab="requests">Requests</button>
+        <button class="tab-btn" data-tab="info">Info</button>
+      </div>
+
+      <!-- Contenu des onglets -->
+      <div class="tab-content" id="tab-controls">
+        <!-- Température -->
+        <div class="control-card">
+          <div class="control-info">
+            <span class="control-label">Temperature</span>
+            <span class="control-value" id="temp-display">22°C</span>
+          </div>
+          <div class="control-btns">
+            <button class="control-btn" id="temp-minus">−</button>
+            <button class="control-btn" id="temp-plus">+</button>
+          </div>
+        </div>
+
+        <!-- Éclairage -->
+        <div class="control-card">
+          <div class="control-info">
+            <span class="control-label">Lighting</span>
+            <span class="control-value" id="light-display">On</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="light-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Stores -->
+        <div class="control-card">
+          <div class="control-info">
+            <span class="control-label">Blinds</span>
+            <span class="control-value" id="blinds-display">Closed</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="blinds-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <!-- Modes intelligents -->
+        <div class="modes-section">
+          <p class="modes-title">INTELLIGENT MODES</p>
+          <div class="modes-row">
+            <button class="mode-btn active" data-mode="night">Night</button>
+            <button class="mode-btn" data-mode="sleep">Sleep</button>
+            <button class="mode-btn" data-mode="work">Work</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-requests" style="display:none">
+        <!-- Sélecteur de type de requête -->
+        <div class="request-type-row">
+          <button class="req-type-btn active" data-type="cleaning">Cleaning</button>
+          <button class="req-type-btn" data-type="complaint">Complaint</button>
+          <button class="req-type-btn" data-type="food_order">Food</button>
+        </div>
+
+        <!-- Panneau Cleaning -->
+        <div class="request-panel" id="req-panel-cleaning">
+          <h3 class="req-panel-title">Request Cleaning</h3>
+          <p class="req-panel-sub">Housekeeping will arrive shortly</p>
+          <button class="btn-gold" id="cleaning-btn">REQUEST NOW</button>
+        </div>
+
+        <!-- Panneau Complaint -->
+        <div class="request-panel" id="req-panel-complaint" style="display:none">
+          <h3 class="req-panel-title">Submit Complaint</h3>
+          <div class="form-group">
+            <label class="form-label">SUBJECT</label>
+            <input type="text" id="complaint-subject" class="form-input dark" placeholder="Brief description" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">DETAILS</label>
+            <textarea id="complaint-details" class="form-textarea dark" placeholder="Describe your issue..." rows="3"></textarea>
+          </div>
+          <button class="btn-gold full" id="complaint-btn">SUBMIT</button>
+        </div>
+
+        <!-- Panneau Food Order -->
+        <div class="request-panel" id="req-panel-food_order" style="display:none">
+          <h3 class="req-panel-title">Food Order</h3>
+          <div class="food-menu" id="food-menu">
+            <!-- Items du menu — générés par smartroom.js -->
+          </div>
+          <div class="cart-summary" id="cart-summary" style="display:none">
+            <div class="cart-items" id="cart-items"></div>
+            <div class="cart-total">
+              Total: <span id="cart-total-amount">0 DT</span>
+            </div>
+          </div>
+          <button class="btn-gold full" id="food-order-btn">ORDER NOW</button>
+        </div>
+
+        <!-- Message de confirmation de requête -->
+        <div id="req-success-msg" class="success-msg" style="display:none">
+          ✓ Request sent successfully!
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-info" style="display:none">
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-key">Room Number</span>
+            <span class="info-val" id="info-room">312</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Hotel</span>
+            <span class="info-val" id="info-hotel">Ophelia Hotel</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Check-In</span>
+            <span class="info-val" id="info-checkin-time">—</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Mode</span>
+            <span class="info-val" id="info-mode">Night</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Temperature</span>
+            <span class="info-val" id="info-temp">22°C</span>
+          </div>
+        </div>
+
+        <!-- Mobile App Promotion -->
+        <div class="app-promo">
+          <p class="app-promo-eyebrow">— Exclusive Mobile App —</p>
+          <h3 class="app-promo-title">Take Ophelia in your <span>pocket</span></h3>
+          <p class="app-promo-desc">
+            Unlock advanced Smart Room features, voice control, concierge chat
+            and exclusive offers — only on our mobile application.
+          </p>
+
+          <!-- Phone Mockup -->
+          <div class="phone-mockup">
+            <div class="phone-frame">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="phone-nav">OPHELIA <span>HOTELS</span></div>
+                <div class="phone-hero">
+                  <div class="phone-hero-eyebrow">Luxury & Comfort</div>
+                  <div class="phone-hero-title">Discover Our <span>Exceptional</span></div>
+                  <div class="phone-hero-line"></div>
+                </div>
+                <div class="phone-cards">
+                  <div class="phone-card" style="background-image:url('images/seaside_cover.jpg')"></div>
+                  <div class="phone-card" style="background-image:url('images/evergreen_cover.jpg')"></div>
+                  <div class="phone-card" style="background-image:url('images/sahara_cover.jpg')"></div>
+                </div>
+              </div>
+            </div>
+            <div class="phone-shadow"></div>
+          </div>
+
+          <a href="https://www.OpheliaHotels.com/app" class="btn-gold app-cta" id="app-install-btn">
+            INSTALL THE APP
+          </a>
+          <p class="app-note">Available on iOS and Android — Free download</p>
+        </div>
+
+        <button class="btn-gold full" id="smartroom-checkout-btn-2">CHECK OUT</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : CHECK-OUT ───────────────────────────── -->
+    <section id="page-checkout" class="page gradient-bg fullscreen" style="display:none">
+      <!-- Écran de scan -->
+      <div class="fullscreen-center" id="checkout-scan-view">
+        <h1 class="page-title">Check-<span>Out</span></h1>
+        <p class="page-sub">Scan QR Code at reception</p>
+        <div class="qr-box">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="120" height="120">
+            <rect x="10" y="10" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="15" y="15" width="20" height="20" fill="#CDAA80"/>
+            <rect x="60" y="10" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="65" y="15" width="20" height="20" fill="#CDAA80"/>
+            <rect x="10" y="60" width="30" height="30" fill="none" stroke="#CDAA80" stroke-width="4"/>
+            <rect x="15" y="65" width="20" height="20" fill="#CDAA80"/>
+            <rect x="60" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="72" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="50" width="8" height="8" fill="#CDAA80"/>
+            <rect x="60" y="62" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="62" width="8" height="8" fill="#CDAA80"/>
+            <rect x="60" y="74" width="8" height="8" fill="#CDAA80"/>
+            <rect x="72" y="74" width="8" height="8" fill="#CDAA80"/>
+            <rect x="84" y="74" width="8" height="8" fill="#CDAA80"/>
+          </svg>
+        </div>
+        <div id="checkout-error" class="error-banner" style="display:none"></div>
+        <button class="btn-gold" id="checkout-scan-btn">SCAN QR CODE</button>
+      </div>
+
+      <!-- Confirmation checkout -->
+      <div class="success-view" id="checkout-success-view" style="display:none">
+        <div class="success-circle">✓</div>
+        <h2 class="success-title">Thank <span>You!</span></h2>
+        <p class="success-sub">Check-out complete</p>
+        <p class="success-hint">Smart Room access deactivated. See you again!</p>
+        <div id="checkout-error-note" class="error-banner" style="display:none"></div>
+        <button class="btn-gold" id="checkout-quiz-btn">SHARE YOUR EXPERIENCE</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE : QUIZ DE SATISFACTION ────────────────── -->
+    <section id="page-quiz" class="page gradient-bg fullscreen" style="display:none">
+      <div class="quiz-container">
+        <div class="quiz-form-view" id="quiz-form-view">
+          <div class="quiz-header">
+            <p class="quiz-eyebrow">— Your Feedback —</p>
+            <h1 class="quiz-title">How was your <span>Stay?</span></h1>
+            <p class="quiz-sub">Your opinion shapes our excellence</p>
+          </div>
+
+          <div class="quiz-progress">
+            <div class="quiz-progress-bar" id="quiz-progress-bar"></div>
+          </div>
+
+          <div class="quiz-questions" id="quiz-questions">
+            <!-- 5 questions remplies par app.js -->
+          </div>
+
+          <button class="btn-gold full" id="quiz-submit-btn">SUBMIT FEEDBACK</button>
+        </div>
+
+        <!-- Résultat du quiz -->
+        <div class="quiz-result-view" id="quiz-result-view" style="display:none">
+          <div class="quiz-stars-final" id="quiz-stars-final"></div>
+          <div class="quiz-score" id="quiz-score">0 / 5</div>
+          <h2 class="quiz-thanks-title">Thank <span>You</span></h2>
+          <p class="quiz-thanks-msg" id="quiz-thanks-msg">
+            We are honoured by your visit. Your feedback helps us perfect every detail of the Ophelia experience.
+          </p>
+          <button class="btn-gold" id="quiz-home-btn">BACK TO HOME</button>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- fin #app -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       FOOTER (visible sur la page d'accueil)
+  ═══════════════════════════════════════════════════════ -->
+  <footer id="site-footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <div class="footer-logo">OPHELIA <span>HOTELS</span></div>
+        <p class="footer-tag">Where every detail is a moment of grace.</p>
+        <div class="footer-divider"></div>
+      </div>
+
+      <div class="footer-contact">
+        <h3 class="footer-section-title">Contact</h3>
+        <div class="footer-row">
+          <span class="footer-label">Email</span>
+          <a href="mailto:ophelia.hotels@gmail.com" class="footer-link">ophelia.hotels@gmail.com</a>
+        </div>
+        <div class="footer-row">
+          <span class="footer-label">Mobile Application</span>
+          <a href="https://www.OpheliaHotels.com/app" class="footer-link" id="footer-app-link">
+            Download for iOS &amp; Android
+          </a>
+        </div>
+        <div class="footer-row">
+          <span class="footer-label">Phone</span>
+          <a href="tel:+11671000000" class="footer-link">+116 71 000 000</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 Ophelia Hotels — Crafted with elegance
+    </div>
+  </footer>
+
+  <!-- ─── OVERLAY DE CHARGEMENT ─────────────────────────── -->
+  <div id="loading-overlay" style="display:none">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ─── MUSIQUE D'AMBIANCE (boucle 5s sur la home) ────── -->
+  <audio id="ambient-audio" preload="auto" loop>
+    <source src="audio/ambient.mp3" type="audio/mpeg">
+  </audio>
+  <button class="music-toggle" id="music-toggle" title="Toggle ambient music">
+    <span class="music-icon-on" aria-hidden="true">
+      <span class="music-bar"></span>
+      <span class="music-bar"></span>
+      <span class="music-bar"></span>
+      <span class="music-bar"></span>
+    </span>
+    <span class="music-icon-off" aria-hidden="true"></span>
+  </button>
+
+  <!-- ════════════════════════════════════════════════════
+       SCRIPTS JS (ordre important : config → api → auth → router → pages)
+  ════════════════════════════════════════════════════ -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/smartroom.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

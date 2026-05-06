@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ophelia Hotels — Admin Panel</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- CSS admin -->
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAVBAR ADMIN
+  ═══════════════════════════════════════════════════════ -->
+  <nav class="admin-nav">
+    <div class="admin-nav-brand">
+      ADMIN <span>PANEL</span>
+    </div>
+    <div class="admin-nav-actions">
+      <button class="admin-btn-icon" id="admin-refresh-btn" title="Refresh">⟳</button>
+      <button class="admin-btn-icon logout" id="admin-logout-btn" title="Sign Out">⏏</button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ONGLETS ADMIN (5 onglets)
+  ═══════════════════════════════════════════════════════ -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" data-tab="overview">Overview</button>
+    <button class="admin-tab" data-tab="reservations">Reservations</button>
+    <button class="admin-tab" data-tab="smartrooms">Smart Rooms</button>
+    <button class="admin-tab" data-tab="requests">Requests</button>
+    <button class="admin-tab" data-tab="users">Users</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       CONTENU PRINCIPAL
+  ═══════════════════════════════════════════════════════ -->
+  <main class="admin-main">
+
+    <!-- Indicateur de chargement -->
+    <div id="admin-loading" class="admin-loading">
+      <div class="spinner gold"></div>
+      <p>Loading admin data…</p>
+    </div>
+
+    <!-- Bannière d'erreur -->
+    <div id="admin-error" class="admin-error-banner" style="display:none">
+      <span id="admin-error-msg"></span>
+      <button id="admin-retry-btn">Retry</button>
+    </div>
+
+    <!-- ─── ONGLET 1 : OVERVIEW ─────────────────────────── -->
+    <div class="admin-panel" id="panel-overview" style="display:none">
+      <!-- Hero du dashboard -->
+      <div class="dashboard-hero reveal-up" style="--d:0ms">
+        <div>
+          <p class="dashboard-eyebrow">— Welcome back —</p>
+          <h1 class="dashboard-title">Ophelia <span>Dashboard</span></h1>
+          <p class="dashboard-sub">Real-time overview of your three luxury properties</p>
+        </div>
+        <div class="dashboard-pulse">
+          <div class="pulse-dot"></div>
+          <span>Live data</span>
+        </div>
+      </div>
+
+      <!-- Grille principale -->
+      <div class="stats-grid">
+        <div class="stat-card reveal-up" style="--d:80ms">
+          <div class="stat-card-top">
+            <div class="stat-glyph">RES</div>
+            <div class="stat-trend">+</div>
+          </div>
+          <div class="stat-label">Total Reservations</div>
+          <div class="stat-value" id="stat-reservations" data-target="0">0</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="--w:75%"></div></div>
+        </div>
+        <div class="stat-card reveal-up" style="--d:160ms">
+          <div class="stat-card-top">
+            <div class="stat-glyph green">STAY</div>
+            <div class="stat-trend live">●</div>
+          </div>
+          <div class="stat-label">Active Stays</div>
+          <div class="stat-value" id="stat-stays" data-target="0">0</div>
+          <div class="stat-bar"><div class="stat-bar-fill green" style="--w:55%"></div></div>
+        </div>
+        <div class="stat-card reveal-up" style="--d:240ms">
+          <div class="stat-card-top">
+            <div class="stat-glyph rose">REQ</div>
+            <div class="stat-trend warn">!</div>
+          </div>
+          <div class="stat-label">Pending Requests</div>
+          <div class="stat-value" id="stat-requests" data-target="0">0</div>
+          <div class="stat-bar"><div class="stat-bar-fill rose" style="--w:40%"></div></div>
+        </div>
+        <div class="stat-card reveal-up" style="--d:320ms">
+          <div class="stat-card-top">
+            <div class="stat-glyph">USR</div>
+            <div class="stat-trend">+</div>
+          </div>
+          <div class="stat-label">Registered Users</div>
+          <div class="stat-value" id="stat-users" data-target="0">0</div>
+          <div class="stat-bar"><div class="stat-bar-fill" style="--w:88%"></div></div>
+        </div>
+        <div class="stat-card wide hero-card reveal-up" style="--d:420ms">
+          <div class="hero-card-bg"></div>
+          <div class="hero-card-content">
+            <p class="stat-label gold">Total Revenue</p>
+            <div class="stat-value-hero" id="stat-revenue">0 DT</div>
+            <p class="hero-card-note">Across all bookings & services</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphiques -->
+      <div class="charts-grid">
+        <!-- Donut : revenue par hôtel -->
+        <div class="chart-card reveal-up" style="--d:520ms">
+          <div class="chart-header">
+            <p class="chart-eyebrow">Distribution</p>
+            <h3 class="chart-title">Revenue by <span>Hotel</span></h3>
+          </div>
+          <div class="chart-body donut-wrap">
+            <svg class="donut" id="donut-revenue" viewBox="0 0 200 200" width="200" height="200">
+              <circle class="donut-track" cx="100" cy="100" r="80" fill="none" stroke="rgba(216,196,172,0.25)" stroke-width="22"/>
+              <!-- Segments injectés par admin.js -->
+              <g id="donut-segments"></g>
+              <text class="donut-center-num" x="100" y="95" text-anchor="middle" id="donut-total">0</text>
+              <text class="donut-center-label" x="100" y="115" text-anchor="middle">DT TOTAL</text>
+            </svg>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+
+        <!-- Bar chart : tendance des réservations (par hôtel) -->
+        <div class="chart-card reveal-up" style="--d:600ms">
+          <div class="chart-header">
+            <p class="chart-eyebrow">Performance</p>
+            <h3 class="chart-title">Reservations by <span>Hotel</span></h3>
+          </div>
+          <div class="chart-body bars-wrap">
+            <div class="bars" id="bars-reservations"></div>
+          </div>
+        </div>
+
+        <!-- Horizontal bars : requêtes par type -->
+        <div class="chart-card reveal-up" style="--d:680ms">
+          <div class="chart-header">
+            <p class="chart-eyebrow">Operations</p>
+            <h3 class="chart-title">Service <span>Requests</span></h3>
+          </div>
+          <div class="chart-body hbars-wrap">
+            <div class="hbars" id="hbars-requests"></div>
+          </div>
+        </div>
+
+        <!-- Status bar : statut des réservations -->
+        <div class="chart-card reveal-up" style="--d:760ms">
+          <div class="chart-header">
+            <p class="chart-eyebrow">Activity</p>
+            <h3 class="chart-title">Reservation <span>Status</span></h3>
+          </div>
+          <div class="chart-body">
+            <div class="status-bar-stack" id="status-bar-stack"></div>
+            <div class="status-legend" id="status-legend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ONGLET 2 : RESERVATIONS ─────────────────────── -->
+    <div class="admin-panel" id="panel-reservations" style="display:none">
+      <div class="admin-list" id="reservations-list">
+        <!-- Rempli dynamiquement par admin.js -->
+      </div>
+    </div>
+
+    <!-- ─── ONGLET 3 : SMART ROOMS ──────────────────────── -->
+    <div class="admin-panel" id="panel-smartrooms" style="display:none">
+      <div class="admin-list" id="smartrooms-list">
+        <!-- Rempli dynamiquement par admin.js -->
+      </div>
+    </div>
+
+    <!-- ─── ONGLET 4 : REQUESTS ─────────────────────────── -->
+    <div class="admin-panel" id="panel-requests" style="display:none">
+      <div class="admin-list" id="requests-list">
+        <!-- Rempli dynamiquement par admin.js -->
+      </div>
+    </div>
+
+    <!-- ─── ONGLET 5 : USERS ────────────────────────────── -->
+    <div class="admin-panel" id="panel-users" style="display:none">
+      <div class="admin-list" id="users-list">
+        <!-- Rempli dynamiquement par admin.js -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Scripts JS admin -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+
+</body>
+</html>
